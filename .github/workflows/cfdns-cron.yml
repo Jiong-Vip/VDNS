@@ -16,7 +16,7 @@ name: cfdns-sync
 
 on:
   schedule:
-    - cron: '15,45 * * * *'
+    - cron: '*/5 * * * *'
   workflow_dispatch:
 
 concurrency:
