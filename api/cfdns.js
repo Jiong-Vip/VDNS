@@ -78,26 +78,35 @@ function readJsonBody(req) {
   });
 }
 
-/** 定时任务鉴权：Authorization: Bearer <CRON_SECRET> 或 x-cron-secret 头 */
+/**
+ * 定时任务鉴权，三种写法都接受：
+ *   Authorization: Bearer <CRON_SECRET>   ← 标准写法
+ *   Authorization: <CRON_SECRET>          ← 有些定时服务只在值里填裸密钥
+ *   x-cron-secret: <CRON_SECRET>
+ * 不接受把密钥放 URL 查询参数（会留在访问日志里）。
+ */
 function cronAuthorized(req, config) {
   if (!config.cronSecret) return false;
 
-  const header = req.headers.authorization || '';
+  const header = req.headers.authorization;
   const direct = req.headers['x-cron-secret'];
-  let provided = '';
+  const candidates = [];
 
-  if (typeof header === 'string' && /^bearer\s+/i.test(header)) {
-    provided = header.replace(/^bearer\s+/i, '').trim();
-  } else if (typeof direct === 'string') {
-    provided = direct.trim();
+  if (typeof header === 'string' && header.trim()) {
+    const text = header.trim();
+    candidates.push(/^bearer\s+/i.test(text) ? text.replace(/^bearer\s+/i, '').trim() : text);
+  }
+  if (typeof direct === 'string' && direct.trim()) {
+    candidates.push(direct.trim());
   }
 
-  if (!provided) return false;
+  const expected = Buffer.from(config.cronSecret, 'utf8');
 
-  const a = Buffer.from(provided, 'utf8');
-  const b = Buffer.from(config.cronSecret, 'utf8');
-  if (a.length !== b.length) return false;
-  return crypto.timingSafeEqual(a, b);
+  return candidates.some(function (value) {
+    const given = Buffer.from(value, 'utf8');
+    if (given.length !== expected.length) return false;
+    return crypto.timingSafeEqual(given, expected);
+  });
 }
 
 function buildState(config) {
@@ -148,7 +157,11 @@ function handleLogout(req, res) {
 }
 
 async function handleRun(req, res, config) {
-  if (req.method !== 'POST') return sendJson(res, 405, { ok: false, error: '请使用 POST 请求' });
+  // POST 是标准用法；很多免费监控/定时服务只会发 GET，
+  // 所以 GET 也支持，但同样必须带 Authorization 头（不接受把密钥放 URL 里）
+  if (req.method !== 'POST' && req.method !== 'GET') {
+    return sendJson(res, 405, { ok: false, error: '请使用 POST 或 GET 请求' });
+  }
 
   const byCron = cronAuthorized(req, config);
   const bySession = auth.isLoggedIn(req, config.pw);
