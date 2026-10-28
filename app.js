@@ -113,7 +113,7 @@
     main.innerHTML =
       '<div class="card login-card">' +
         '<h1>CFDNS 控制台</h1>' +
-        '<p>请输入访问密码（服务端环境变量 PW）</p>' +
+        '<p>请输入访问密码PassWord</p>' +
         (message ? '<div class="note">' + esc(message) + '</div>' : '') +
         '<input id="pwInput" type="password" placeholder="访问密码" autocomplete="current-password" autofocus>' +
         '<button id="loginBtn" class="btn primary block">进入控制台</button>' +
@@ -181,7 +181,7 @@
       '</div>' +
 
       '<div class="card">' +
-        '<h2>执行日志（最新在最上面，最多 100 条）</h2>' +
+        '<h2>执行日志：</h2>' +
         '<div class="log" id="logBox"></div>' +
         '<div class="hint" id="logHint"></div>' +
       '</div>' +
@@ -203,7 +203,7 @@
           '<tr><td>PW</td><td>面板访问密码</td></tr>' +
           '<tr><td>Key</td><td>DNSHE API Key</td></tr>' +
           '<tr><td>Secret</td><td>DNSHE API Secret</td></tr>' +
-          '<tr><td>YM</td><td>操作主域名，如 <code>y1s1.cc.cd</code></td></tr>' +
+          '<tr><td>YM</td><td>操作主域名，如 <code>xxx.cc.cd</code></td></tr>' +
           '<tr><td>CRON_SECRET</td><td>外部执行接口的密钥（可选但推荐）</td></tr>' +
         '</table>' +
         '<div class="hint">修改环境变量后需要重新部署才会生效。</div>' +
