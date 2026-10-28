@@ -2,7 +2,8 @@
   'use strict';
 
   var CACHE_KEY = 'cfdns.logs.v1';
-  var POLL_MS = 8000;
+  var POLL_MS = 8000;        // 空闲时的刷新间隔
+  var FAST_POLL_MS = 1000;   // 执行中：每秒拉一次，日志就能一步步出现
 
   var main = document.getElementById('main');
   var topbarRight = document.getElementById('topbarRight');
@@ -16,6 +17,7 @@
   };
 
   var pollTimer = null;
+  var pollInterval = POLL_MS;
 
   /* ------------------------------------------------------------------ */
   /* 工具                                                                */
@@ -113,7 +115,7 @@
     main.innerHTML =
       '<div class="card login-card">' +
         '<h1>CFDNS 控制台</h1>' +
-        '<p>请输入访问密码PassWord</p>' +
+        '<p>请输入访问密码（服务端环境变量 PW）</p>' +
         (message ? '<div class="note">' + esc(message) + '</div>' : '') +
         '<input id="pwInput" type="password" placeholder="访问密码" autocomplete="current-password" autofocus>' +
         '<button id="loginBtn" class="btn primary block">进入控制台</button>' +
@@ -181,7 +183,7 @@
       '</div>' +
 
       '<div class="card">' +
-        '<h2>执行日志：</h2>' +
+        '<h2>执行日志（最新在最上面，最多 100 条）</h2>' +
         '<div class="log" id="logBox"></div>' +
         '<div class="hint" id="logHint"></div>' +
       '</div>' +
@@ -203,7 +205,7 @@
           '<tr><td>PW</td><td>面板访问密码</td></tr>' +
           '<tr><td>Key</td><td>DNSHE API Key</td></tr>' +
           '<tr><td>Secret</td><td>DNSHE API Secret</td></tr>' +
-          '<tr><td>YM</td><td>操作主域名，如 <code>xxx.cc.cd</code></td></tr>' +
+          '<tr><td>YM</td><td>操作主域名，如 <code>y1s1.cc.cd</code></td></tr>' +
           '<tr><td>CRON_SECRET</td><td>外部执行接口的密钥（可选但推荐）</td></tr>' +
         '</table>' +
         '<div class="hint">修改环境变量后需要重新部署才会生效。</div>' +
@@ -345,6 +347,9 @@
     setBusy(true);
     toast(path === '/api/run' ? '正在执行，请稍候…' : '正在检查…');
 
+    // 立刻切到每秒轮询，日志会随着服务端每写一行就冒出来
+    startPolling(FAST_POLL_MS);
+
     api(path, { method: 'POST' })
       .then(function (res) {
         if (res.status === 401) {
@@ -401,6 +406,9 @@
       renderStats(res.data);
       renderLogs(res.data);
 
+      // 执行中每秒刷新（日志逐步出现），空闲时回到 8 秒
+      startPolling((res.data.running || model.busy) ? FAST_POLL_MS : POLL_MS);
+
       if (res.data.lastRun) {
         model.cache.lastRun = res.data.lastRun;
         saveCache(model.cache.lines, res.data.lastRun);
@@ -408,12 +416,17 @@
     });
   }
 
-  function startPolling() {
+  function startPolling(interval) {
+    var next = interval || POLL_MS;
+    // 间隔没变就不重建定时器，避免每次刷新都重置
+    if (pollTimer && next === pollInterval) return;
+
     stopPolling();
+    pollInterval = next;
     pollTimer = setInterval(function () {
-      if (document.hidden || model.busy) return;
+      if (document.hidden) return;
       refresh().catch(function () { /* 忽略轮询错误 */ });
-    }, POLL_MS);
+    }, pollInterval);
   }
 
   function stopPolling() {
