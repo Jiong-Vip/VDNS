@@ -4,7 +4,7 @@
   "private": true,
   "description": "CFDNS 云端控制台：抓取 BestCF 优选 IP 并通过 DNSHE API 更新解析记录",
   "engines": {
-    "node": ">=18"
+    "node": "22.x"
   },
   "scripts": {
     "dev": "node tests/serve.js"
