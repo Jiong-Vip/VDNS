@@ -1,0 +1,55 @@
+# CFDNS 定时同步（GitHub Actions → Vercel 执行 API）
+#
+# 用法：
+#   1. 在仓库 Settings → Secrets and variables → Actions 里添加
+#        CFDNS_URL    你的 Vercel 站点地址，例如 https://cfdns-xxx.vercel.app（不带 /api/run）
+#        CRON_SECRET  与 Vercel 环境变量里 CRON_SECRET 相同的值
+#   2. 把本文件复制到 .github/workflows/cfdns-cron.yml（注意路径，放根目录不会执行）
+#
+# 注意：如果密钥放在「环境机密 Environment secrets」里，必须给 job 加上
+#       environment: <环境名>，否则读不到（表现为提示缺少 CFDNS_URL 或 CRON_SECRET）。
+#       用「仓库机密 Repository secrets」则不需要这一行。
+#
+# GitHub 计划任务最快 5 分钟一次，且高峰期可能延迟几分钟，属于正常现象。
+
+name: cfdns-sync
+
+on:
+  schedule:
+    - cron: '*/30 * * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: cfdns-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    # 密钥放在「环境机密」里时取消下一行注释并填环境名
+    # environment: production
+    steps:
+      - name: 触发同步
+        env:
+          CFDNS_URL: ${{ secrets.CFDNS_URL }}
+          CRON_SECRET: ${{ secrets.CRON_SECRET }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${CFDNS_URL:-}" ] || [ -z "${CRON_SECRET:-}" ]; then
+            echo "缺少 CFDNS_URL 或 CRON_SECRET 仓库密钥"
+            exit 1
+          fi
+
+          body=$(curl -sS -X POST "${CFDNS_URL%/}/api/run" \
+            -H "Authorization: Bearer ${CRON_SECRET}" \
+            -H "Content-Type: application/json" \
+            --max-time 120)
+
+          echo "$body" | jq -r '.summary // .error // "无返回内容"'
+          echo "--- 执行日志 ---"
+          echo "$body" | jq -r '.logs[]?' | head -n 100
+
+          # ok=false（有失败项）时让工作流变红
+          echo "$body" | jq -e '.ok == true' > /dev/null
