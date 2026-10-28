@@ -1,0 +1,17 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "functions": {
+    "api/cfdns.js": {
+      "maxDuration": 60
+    }
+  },
+  "rewrites": [
+    { "source": "/api/login", "destination": "/api/cfdns?action=login" },
+    { "source": "/api/logout", "destination": "/api/cfdns?action=logout" },
+    { "source": "/api/state", "destination": "/api/cfdns?action=state" },
+    { "source": "/api/run", "destination": "/api/cfdns?action=run" },
+    { "source": "/api/check", "destination": "/api/cfdns?action=check" },
+    { "source": "/api/clear", "destination": "/api/cfdns?action=clear" },
+    { "source": "/api/health", "destination": "/api/cfdns?action=health" }
+  ]
+}
