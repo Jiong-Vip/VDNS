@@ -175,8 +175,8 @@ async function handleRun(req, res, config) {
   store.beginRun(trigger);
 
   try {
-    const result = await sync.runSync(config, { trigger: trigger });
-    store.addLines(result.lines);
+    // onLog：每产生一行就写进内存日志，面板轮询时能边执行边显示
+    const result = await sync.runSync(config, { trigger: trigger, onLog: store.addLine });
     store.finishRun(result);
 
     return sendJson(res, 200, {
@@ -206,8 +206,7 @@ async function handleCheck(req, res, config) {
   }
 
   try {
-    const result = await sync.runCheck(config);
-    store.addLines(result.lines);
+    const result = await sync.runCheck(config, { onLog: store.addLine });
     return sendJson(res, 200, { ok: result.ok, summary: result.summary, logs: result.lines });
   } catch (err) {
     return sendJson(res, 500, { ok: false, error: err && err.message ? err.message : String(err) });
