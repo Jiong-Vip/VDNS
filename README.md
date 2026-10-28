@@ -43,7 +43,7 @@ Vercel 已连接你的 GitHub 仓库，导入时**必须把 Root Directory 设�
 
 **新建项目**
 
-1. Vercel → Add New → Project → 选 `Jiong-Vip/CFDNS`
+1. Vercel → Add New → Project → 选 `YourName/CFDNS`
 2. **Root Directory** 点 Edit，选 `vercel`
 3. Framework Preset：`Other`（不要选 Next.js）
 4. Build Command / Output Directory：**全部留空**
@@ -59,7 +59,7 @@ Vercel 已连接你的 GitHub 仓库，导入时**必须把 Root Directory 设�
 | `PW` | 是 | 面板访问密码，登录后 7 天免登录 |
 | `Key` | 是 | DNSHE API Key（`cfsd_` 开头） |
 | `Secret` | 是 | DNSHE API Secret |
-| `YM` | 是 | 操作主域名，如 `y1s1.cc.cd`（DNSHE 账号下已注册） |
+| `YM` | 是 | 操作主域名，如 `xxx.com` |
 | `CRON_SECRET` | 建议 | 外部执行接口的密钥；不设置则只能面板手动执行 |
 | `SOURCE_IPV6` / `SOURCE_IPV4` | 否 | 自定义优选地址来源 |
 
